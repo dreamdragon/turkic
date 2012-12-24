@@ -108,6 +108,17 @@ class Server(object):
         r.store("HIT/HITTypeId", "hittypeid")
         return r
     
+    def extendhit(self, hitid):
+        """
+        Extend the hit by 5 days
+        """
+        r = self.request("ExtendHIT",   {"HITId": hitid,
+                                        "ExpirationIncrementInSeconds": 432000})
+        print r
+        r.validate("ExtendHITResult/Request/IsValid")
+        return r
+
+
     def disable(self, hitid):
         """
         Disables the HIT from the MTurk service.

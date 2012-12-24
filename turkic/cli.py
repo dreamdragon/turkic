@@ -319,6 +319,32 @@ class publish(Command):
             session.commit()
             session.close()
 
+class extendhit(Command):
+    def setup(self):
+        parser = argparse.ArgumentParser()
+        parser.add_argument("--limit", type=int, default = 0)
+        return parser
+
+    def __call__(self, args):
+        session = database.connect()
+        try:
+            query = session.query(HIT)
+            query = query.join(HITGroup)
+            query = query.filter(HITGroup.offline == False)
+            query = query.filter(HIT.published == True)
+            query = query.filter(HIT.completed == False)
+
+            if args.limit > 0:
+                query = query.limit(args.limit)
+
+            for hit in query:
+                hit.extendhit()
+                print "Extended {0}".format(hit.hitid)
+        finally:
+            session.commit()
+            session.close()
+
+
 class compensate(Command):
     def setup(self):
         parser = argparse.ArgumentParser()
@@ -574,6 +600,8 @@ class workers(Command):
                 print "Blocked: {0}".format(worker.blocked)
                 if args.location:
                     print "Locations: {0}".format(", ".join(set(x.country for x in worker.locations)))
+                    #print "Latitude : {0}".format(", ".join(set(x.latitude for x in worker.locations)))
+                    #print "Longitude: {0}".format(", ".join(set(x.longitude for x in worker.locations)))
             else:
                 print "No matches."
         else:
@@ -582,9 +610,13 @@ class workers(Command):
             for worker in workers:
                 extra = ""
                 if worker.blocked:
-                    extra = "BLOCKED"
+                    extra = "BLOCKED\t"
                 if args.location:
                     locs = set(x.country for x in worker.locations)
+                    #latitudes = set(x.latitude for x in worker.locations)
+                    #longitudes = set(x.longitude for x in worker.locations)
+                    #print "\n".join(map(str,zip(latitudes,longitudes))) 
+                    print "\n".join(locs)
                     if locs:
                         locs = ", ".join(locs)
                         extra += " " + locs
@@ -594,7 +626,7 @@ class workers(Command):
                         worker.numacceptances,
                         worker.numrejections,
                         extra)
-                print "{0:<15} {1:>5} jobs {2:>5} acc {3:>5} rej     {4}".format(*data)
+                #print "{0:<15} {1:>5} jobs {2:>5} acc {3:>5} rej     {4}".format(*data)
 
 class email(Command):
     def setup(self):
@@ -634,6 +666,7 @@ except ImportError:
 else:
     handler("Report job status")(status)
     handler("Launch work")(publish)
+    handler("Extend work time")(extendhit)
     handler("Pay workers")(compensate)
     handler("Setup the application")(setup)
     handler("Report status on donations")(donation)

@@ -131,6 +131,12 @@ class HIT(database.Base):
         self.published = True
         logger.debug("Published HIT {0}".format(self.hitid))
 
+    def extendhit(self):
+        if not self.published:
+            raise RuntimeError("HIT cannot be extended because it is not published")
+        resp = api.server.extendhit(self.hitid)
+        logger.debug("Extended HIT {0}".format(self.hitid))
+
     def getpage(self):
         raise NotImplementedError()
 
